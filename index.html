@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TODAY.</title>
+<meta name="theme-color" content="#0B0B0B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TODAY.">
+<meta name="description" content="Today's news as kinetic poster typography.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="preload" href="fonts/Anton-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face{font-family:"Anton";src:url(fonts/Anton-Regular.woff2) format("woff2");font-display:swap}
+  @font-face{font-family:"Instrument Serif";src:url(fonts/InstrumentSerif-Regular.woff2) format("woff2");font-style:normal;font-display:swap}
+  @font-face{font-family:"Instrument Serif";src:url(fonts/InstrumentSerif-Italic.woff2) format("woff2");font-style:italic;font-display:swap}
+  #install{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;display:none;align-items:center;gap:12px;
+    background:#F2F0EB;color:#0B0B0B;padding:12px 14px;font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:16px;line-height:1.25}
+  #install.on{display:flex}
+  body:not(:has(#topics.on)) #install{display:none!important}
+  body.installing #topics{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+  #install b{font-family:Anton,Impact,sans-serif;font-style:normal;font-weight:400;letter-spacing:-.01em}
+  #install button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
+  #install .go{background:#E10600;color:#F2F0EB;font-family:Anton,Impact,sans-serif;font-style:normal;padding:8px 12px;font-size:16px}
+  #install .x{margin-left:auto;font-size:22px;font-style:normal;padding:0 4px}
+  :root{
+    --ink:#0B0B0B; --paper:#F2F0EB; --red:#E10600;
+    --display:"Anton","Oswald",Impact,sans-serif;
+    --serif:"Instrument Serif","Playfair Display",Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--ink);color:var(--paper);overflow:hidden;
+    -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+  body{font-family:var(--serif)}
+  a{color:inherit}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+  /* film grain */
+  .grain{position:fixed;inset:-50%;pointer-events:none;z-index:50;opacity:.11;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grain 1.2s steps(6) infinite}
+  @keyframes grain{
+    0%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}
+    60%{transform:translate(-2%,-1%)}80%{transform:translate(3%,3%)}100%{transform:translate(0,0)}}
+  .flash{position:fixed;inset:0;background:var(--paper);z-index:60;opacity:0;pointer-events:none}
+
+  .screen{position:fixed;inset:0;display:none;flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 16px)}
+  .screen.on{display:flex}
+
+  .display{font-family:var(--display);text-transform:uppercase;letter-spacing:-0.03em;
+    line-height:.9;text-align:center;font-weight:400}
+  .fit{display:block;white-space:nowrap}
+  .fit > span.m{display:inline-block}
+  .cap{font-style:italic;text-align:center;font-size:clamp(17px,4.6vw,22px);line-height:1.15}
+  .meta{font-style:italic;text-align:center;font-size:12px;opacity:.8;letter-spacing:.01em}
+  .back{font-style:italic;font-size:16px;text-decoration:none;opacity:.85}
+  .topbar{display:flex;justify-content:space-between;align-items:center;min-height:24px}
+
+  /* screen 1 */
+  #topics .cap{margin:6px 0 10px}
+  #topicList{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+  #topicList button{display:block;width:100%;padding:0;transition:none}
+  #topicList button.inv{background:var(--paper);color:var(--ink)}
+  .apptag{font-family:var(--serif);font-style:italic;text-transform:none;letter-spacing:0;font-size:15px;line-height:1;
+    border-top:1px solid rgba(242,240,235,.45);padding-top:10px;margin-top:10px;margin-bottom:4px;opacity:.85}
+  #topicList button:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
+
+  /* screen 2 */
+  #press .head{margin-top:14px}
+  #press .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+  .redbtn{width:min(60vw,320px);aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 50% 38%,#ff2a1f 0%,var(--red) 55%,#a80400 100%);
+    box-shadow:inset 0 -10px 22px rgba(0,0,0,.45),inset 0 8px 16px rgba(255,255,255,.18),0 0 0 6px #1a1a1a,0 0 0 7px #2a2a2a;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);color:#fff;letter-spacing:-0.01em;font-size:clamp(38px,12vw,64px);
+    touch-action:manipulation;user-select:none}
+  .redbtn:focus-visible{outline:2px solid var(--paper);outline-offset:10px}
+  .redbtn.small{width:110px;font-size:26px;box-shadow:inset 0 -6px 14px rgba(0,0,0,.45),inset 0 5px 10px rgba(255,255,255,.18),0 0 0 4px #1a1a1a}
+
+  /* screen 3 */
+  #play{touch-action:pan-y;user-select:none;-webkit-user-select:none}
+  #prog{font-family:var(--display);font-size:16px;letter-spacing:.02em}
+  #stage{flex:1;display:flex;flex-direction:column;min-height:0}
+  #poster{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden;padding-top:6px}
+  #poster .w{display:inline-block;opacity:0;will-change:transform,opacity}
+  #summary{font-style:italic;text-align:center;font-size:clamp(18px,4.9vw,23px);line-height:1.18;
+    max-width:30ch;margin:14px auto 0;min-height:5.9em}
+  .cursor{display:inline-block;width:.08em;height:.95em;background:var(--paper);vertical-align:-.12em;margin-left:.12em;
+    animation:blink .9s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  #source{margin-top:8px;min-height:15px}
+  #source a{text-decoration:none;border-bottom:1px solid rgba(242,240,235,.35)}
+  #pausedTag{position:absolute;left:0;right:0;top:46%;text-align:center;font-style:italic;font-size:15px;
+    opacity:0;pointer-events:none;transition:opacity .2s}
+  #play.paused #pausedTag{opacity:.9}
+  #play.paused .cursor{animation:none}
+  .hint{font-style:italic;font-size:12px;opacity:.5;text-align:center;margin-top:6px}
+
+  /* screen 4 */
+  #end .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:0}
+  #endPoster{width:100%}
+
+  /* archive controls */
+  .arcLink{font-style:italic;font-size:16px;text-decoration:none;opacity:.9;border-bottom:1px solid rgba(242,240,235,.4)}
+  .actions{display:flex;justify-content:center;margin-top:12px}
+  .arc{font-family:var(--display);font-size:18px;letter-spacing:.02em;padding:9px 18px 7px;border:1.5px solid var(--paper);min-width:150px}
+  .arc.on{background:var(--paper);color:var(--ink)}
+  .arc:focus-visible,.ghost:focus-visible{outline:2px solid var(--paper);outline-offset:3px}
+  .ghost{font-family:var(--serif);font-style:italic;font-size:15px;border-bottom:1px solid rgba(242,240,235,.45);padding:2px 0}
+  /* archive screen */
+  #archive .head{margin:10px 0 6px}
+  #arcList{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px;border-top:1px solid rgba(242,240,235,.35)}
+  .item{padding:14px 0;border-bottom:1px solid rgba(242,240,235,.35)}
+  .item h3{font-family:var(--display);font-weight:400;text-transform:uppercase;letter-spacing:-.01em;font-size:30px;line-height:.92}
+  .item p{font-style:italic;font-size:18px;line-height:1.2;margin-top:6px}
+  .item .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:8px;font-style:italic;font-size:13px;opacity:.85}
+  .item .row a{border-bottom:1px solid rgba(242,240,235,.4);text-decoration:none}
+  .empty{font-style:italic;text-align:center;font-size:19px;padding:40px 10px;opacity:.85}
+  .arcFoot{padding-top:12px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+  .confirm{display:none;flex-direction:column;gap:10px;align-items:center;font-style:italic;font-size:16px}
+  .confirm.on{display:flex}
+  .confirm .btns{display:flex;gap:18px;align-items:center}
+  .danger{font-family:var(--display);font-size:17px;padding:8px 14px 6px;background:var(--red);color:#fff}
+  .note{font-style:italic;font-size:12px;opacity:.6}
+  /* sources on end screen */
+  #endSources{width:100%;max-height:26vh;overflow:auto;text-align:left;border-top:1px solid rgba(242,240,235,.35);padding-top:8px}
+  #endSources h4{font-family:var(--display);font-weight:400;font-size:16px;letter-spacing:.02em;margin-bottom:4px}
+  #endSources li{list-style:none;font-style:italic;font-size:14px;line-height:1.3;padding:3px 0}
+  #endSources a{text-decoration:none;border-bottom:1px solid rgba(242,240,235,.4)}
+  /* prediction market line */
+  #market{min-height:0;margin-top:8px;text-align:center}
+  .mkt{display:inline-block;max-width:34ch;border:1px solid rgba(242,240,235,.35);padding:6px 10px 5px;font-style:italic;font-size:13px;line-height:1.3;text-decoration:none}
+  .mkt b{font-family:var(--display);font-weight:400;font-style:normal;font-size:13px;letter-spacing:.04em;display:block}
+  .mkt .o{font-family:var(--display);font-style:normal;font-size:17px;display:block;margin:2px 0}
+  .item .mk{font-style:italic;font-size:13px;margin-top:6px;opacity:.9}
+  .item .mk a{border-bottom:1px solid rgba(242,240,235,.4);text-decoration:none}
+  /* export screen */
+  #expScroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px}
+  #expGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .slide{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .slide img{width:100%;aspect-ratio:4/5;display:block;border:1px solid rgba(242,240,235,.25);-webkit-touch-callout:default}
+  .expH{font-family:var(--display);font-weight:400;font-size:18px;letter-spacing:.03em;margin:18px 0 6px}
+  #expCaption{width:100%;background:#141414;color:var(--paper);border:1px solid rgba(242,240,235,.3);font:14px/1.4 ui-monospace,Menlo,monospace;padding:10px;resize:none}
+  /* claim screen */
+  #claim .head,#logo .head{margin-top:10px}
+  #logo .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0;text-align:center}
+  #logo .rules{text-align:left}
+  #logoSeason{font-family:var(--serif);font-style:italic;font-size:clamp(20px,5.6vw,28px);line-height:1.2;max-width:520px}
+  #logoSeason small{display:block;font-size:14px;opacity:.6;margin-top:6px}
+  #claim .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0}
+  .rules{list-style:none;max-width:30ch;display:flex;flex-direction:column;gap:9px}
+  .rules li{display:grid;grid-template-columns:1.6em 1fr;font-style:italic;font-size:17px;line-height:1.2}
+  .rules b{font-family:var(--display);font-weight:400;font-style:normal;font-size:20px}
+  a.redbtn{text-decoration:none}
+  .slideBtn{font-family:var(--display);font-size:18px;letter-spacing:.02em;padding:9px 18px 7px;background:var(--red);color:#fff}
+  @media (prefers-reduced-motion: reduce){ .grain{animation:none} .cursor{animation:none} }
+
+[hidden]{display:none!important}
+#playlist.on{display:flex}
+#plList{list-style:none;margin:0 0 16px;padding:0}
+#plList li{border-top:1px solid rgba(242,240,235,.18);padding:10px 0}
+#plList a{text-decoration:none;display:block}
+#plList .n,#plList .t,#plList .a{display:block}
+#plList .n{font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-size:14px;opacity:.6}
+#plList .t{font-family:'Anton',Oswald,Impact,sans-serif;text-transform:uppercase;font-size:clamp(22px,7vw,34px);line-height:.95;letter-spacing:-.02em}
+#plList .a{font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-size:16px;opacity:.75}
+.plSteps{margin:0 0 10px 1.2em;font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-size:17px;line-height:1.35}
+.plSteps a{color:inherit}
+.plLink{display:inline-block;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="flash" id="flash"></div>
+
+<!-- SCREEN 1 -->
+<section class="screen on" id="topics" aria-label="Choose a topic">
+  <div class="topbar"><span></span><a href="#" class="arcLink" data-open-archive>Archive (<span class="arcCount">0</span>)</a></div>
+  <p class="cap">What do you want to know today?</p>
+  <nav id="topicList" class="display"></nav>
+  <p class="meta" id="meta1"></p>
+</section>
+
+<!-- SCREEN 2 -->
+<section class="screen" id="press" aria-label="Press to start">
+  <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span></span></div>
+  <div class="head display" id="pressHead"></div>
+  <div class="mid">
+    <button class="redbtn" id="bigRed" aria-label="Press for today's headlines">PRESS</button>
+    <p class="cap" id="pressCap">Press for today's headlines.</p>
+    <a href="#" class="ghost plLink" data-open-playlist hidden>Or open this week's playlist →</a>
+  </div>
+  <p class="meta" id="meta2"></p>
+</section>
+
+<!-- SCREEN 3 -->
+<section class="screen" id="play" aria-label="Headlines">
+  <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span id="prog">01 / 05</span></div>
+  <div id="stage">
+    <div id="poster" class="display" aria-live="polite"></div>
+    <p id="summary"></p>
+    <p class="meta" id="source"></p>
+    <div id="market" aria-live="polite"></div>
+  </div>
+  <div class="actions"><button class="arc" id="arcBtn" aria-pressed="false">+ ARCHIVE</button></div>
+  <p class="hint">Tap to pause · Swipe to skip · <a href="#" class="ghost" data-open-archive style="font-size:12px">Archive (<span class="arcCount">0</span>)</a></p>
+  <div id="pausedTag">Paused</div>
+</section>
+
+<!-- SCREEN 4 -->
+<section class="screen" id="end" aria-label="End">
+  <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span></span></div>
+  <div class="mid">
+    <div id="endPoster" class="display"></div>
+    <button class="redbtn small" id="again">AGAIN</button>
+    <a href="#" class="cap" data-back style="text-decoration:none;border-bottom:1px solid rgba(242,240,235,.4)">Pick another topic</a>
+    <a href="#" class="ghost" data-open-archive>Open your archive (<span class="arcCount">0</span>)</a>
+    <button class="slideBtn" data-open-playlist hidden>▶ THE PLAYLIST</button>
+    <div id="endSources"><h4>SOURCES</h4><ul id="endSourceList"></ul></div>
+  </div>
+  <p class="meta" id="meta4"></p>
+</section>
+
+<!-- LOGO SHOP -->
+<section class="screen" id="logo" aria-label="Daily Logo Shop">
+  <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span></span></div>
+  <div class="head display" id="logoHead"></div>
+  <div class="mid">
+    <p id="logoSeason"></p>
+    <ol class="rules">
+      <li><b>1</b><span>Every day brings a new mark, drawn from one of Japan's 72 micro-seasons.</span></li>
+      <li><b>2</b><span>Type your brand name, then pick a motif, layout and colors.</span></li>
+      <li><b>3</b><span>Shuffle for ideas. Every mark is original geometry.</span></li>
+      <li><b>4</b><span>Save it as SVG or PNG.</span></li>
+    </ol>
+    <a class="redbtn small" id="logoOpen" href="https://claude.ai/artifact/BNzfipQWN9duLGxwnTcSsd" target="_blank" rel="noopener" style="width:130px;font-size:30px">OPEN</a>
+    <p class="cap" style="font-size:16px">Opens the Daily Logo Shop in a new tab.</p>
+  </div>
+  <p class="meta" id="metaLogo"></p>
+</section>
+
+<!-- CLAIM -->
+<section class="screen" id="claim" aria-label="Claim, today's game">
+  <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span></span></div>
+  <div class="head display" id="claimHead"></div>
+  <div class="mid">
+    <ol class="rules">
+      <li><b>1</b><span>Tap letters anywhere on the 5×5 board to spell a word, then press Play.</span></li>
+      <li><b>2</b><span>Every tile in a real word is claimed, and claimed tiles can be used again.</span></li>
+      <li><b>3</b><span>A claimed tile boxed in on all four sides locks for good.</span></li>
+      <li><b>4</b><span>Claim all 25 in as few words as you can. Beat par.</span></li>
+    </ol>
+    <a class="redbtn small" id="claimPlay" href="https://claude.ai/artifact/J56wLgj1oUokb56Rg6juFs" target="_blank" rel="noopener" style="width:130px;font-size:30px">PLAY</a>
+    <p class="cap" style="font-size:16px">Opens Claim in a new tab.</p>
+  </div>
+  <p class="meta" id="metaClaim"></p>
+</section>
+
+<!-- EXPORT -->
+<section class="screen" id="export" aria-label="Export for Instagram">
+  <div class="topbar"><a href="#" class="back" id="expBack">← Archive</a><span class="meta">4:5 carousel</span></div>
+  <div class="head display" id="expHead"></div>
+  <p class="cap" id="expStatus" style="font-size:16px;margin:6px 0 10px"></p>
+  <div id="expScroll">
+    <div id="expGrid"></div>
+    <div class="actions"><button class="slideBtn" id="saveAll">SAVE ALL SLIDES</button></div>
+    <h4 class="expH">CAPTION</h4>
+    <textarea id="expCaption" rows="7" readonly aria-label="Instagram caption with sources"></textarea>
+    <div class="actions" style="margin-bottom:18px"><button class="arc" id="copyCap">COPY CAPTION</button></div>
+  </div>
+</section>
+
+<!-- PLAYLIST -->
+<section class="screen" id="playlist" aria-label="Playlist">
+  <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span class="meta" id="plMeta"></span></div>
+  <div class="head display" id="plHead"></div>
+  <p class="cap" id="plCap" style="font-size:16px;margin:6px 0 10px"></p>
+  <div id="plScroll" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch">
+    <ol id="plList"></ol>
+    <div class="actions" style="gap:10px;flex-wrap:wrap"><button class="slideBtn" id="plCopy">COPY SONG LIST</button><button class="arc" id="plSave" style="min-width:0">SAVE AS .TXT</button></div>
+    <h4 class="expH">MAKE IT A YOUTUBE MUSIC PLAYLIST</h4>
+    <ol class="plSteps">
+      <li>Tap <b>Copy song list</b>.</li>
+      <li>Open <a href="https://www.tunemymusic.com/transfer/freetext-to-youtube-music" target="_blank" rel="noopener">Tune My Music</a>, paste the list and sign in to YouTube Music.</li>
+      <li>It matches each song and builds the playlist in your account.</li>
+    </ol>
+    <p class="note" style="margin-bottom:18px">Or tap any song above to find it on YouTube Music and add it yourself.</p>
+  </div>
+</section>
+
+<!-- ARCHIVE -->
+<section class="screen" id="archive" aria-label="Your archive">
+  <div class="topbar"><a href="#" class="back" id="arcBack">← Back</a><span class="meta" id="arcMeta"></span></div>
+  <div class="head display" id="arcHead"></div>
+  <div class="actions" style="margin:4px 0 12px;gap:10px;flex-wrap:wrap"><button class="slideBtn" id="slideBtn">▶ SLIDESHOW</button><button class="arc" id="expBtn" style="min-width:0">EXPORT FOR INSTAGRAM</button></div>
+  <div id="arcList"></div>
+  <div class="arcFoot">
+    <button class="ghost" id="clearBtn">Remove all archived stories</button>
+    <div class="confirm" id="confirm" role="alertdialog" aria-label="Confirm clearing the archive">
+      <span id="confirmText"></span>
+      <div class="btns"><button class="danger" id="clearYes">CLEAR ARCHIVE</button><button class="ghost" id="clearNo">Cancel</button></div>
+    </div>
+    <p class="note" id="storeNote"></p>
+  </div>
+</section>
+
+<script src="edition.js"></script>
+<script>
+/* ───────── TODAY'S EDITION ─────────
+   Snapshot gathered Nov. 13, 2026. Summaries only restate what the source headlines say. */
+TOPICS.forEach(t=>t.stories.forEach((s,i)=>{ s.id = EDITION.iso+"_"+t.key.toLowerCase().replace(/[^a-z]+/g,"-")+"_"+(i+1); s.topic=t.key; }));
+
+/* ───────── helpers ───────── */
+const $ = s => document.querySelector(s);
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const title = t => t.charAt(0) + t.slice(1).toLowerCase();
+let topic = null;
+
+function metaLine(t){ return `No. ${EDITION.issue} • ${t ? title(t) : "Today's edition"} • ${EDITION.date}`; }
+
+// Build fitted lines: each line sized to fill width; whole block capped to maxH.
+function buildLines(container, lines, {maxH, maxSize=Infinity, wrapWords=false}={}){
+  container.innerHTML = "";
+  const els = lines.map(text=>{
+    const line = document.createElement("div"); line.className="fit";
+    const m = document.createElement("span"); m.className="m";
+    if (wrapWords){
+      text.split(" ").forEach((w,i,a)=>{
+        const s=document.createElement("span"); s.className="w"; s.textContent=w; m.appendChild(s);
+        if(i<a.length-1) m.appendChild(document.createTextNode(" "));
+      });
+    } else m.textContent = text;
+    line.appendChild(m); container.appendChild(line);
+    return {line, m};
+  });
+  fit(container, els, maxH, maxSize);
+  return els;
+}
+function fit(container, els, maxH, maxSize){
+  const W = container.clientWidth;
+  const sizes = els.map(({m})=>{
+    m.parentNode.style.fontSize = "100px";
+    const w = m.getBoundingClientRect().width || 1;
+    return Math.min((W*0.985/w)*100, maxSize);
+  });
+  const total = sizes.reduce((a,s)=>a+s*0.9,0);
+  const k = maxH && total>maxH ? maxH/total : 1;
+  els.forEach(({line},i)=>{ line.style.fontSize = (sizes[i]*k)+"px"; });
+}
+
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on", s.id===id));
+}
+function flash(){
+  const f=$("#flash"); f.style.opacity=1; setTimeout(()=>f.style.opacity=0, reduce?0:50);
+}
+
+/* ───────── screen 1 ───────── */
+function renderTopics(){
+  show("topics");
+  $("#meta1").textContent = metaLine(null);
+  const list = $("#topicList"); list.innerHTML="";
+  const btns = TOPICS.map(t=>{
+    const b=document.createElement("button"); b.setAttribute("aria-label", title(t.key));
+    const line=document.createElement("span"); line.className="fit";
+    const m=document.createElement("span"); m.className="m"; m.textContent=t.key;
+    line.appendChild(m); b.appendChild(line);
+    if(t.extra){
+      b.classList.add("appbtn");
+      if(!list.querySelector(".apptag")){ const tag=document.createElement("p"); tag.className="apptag"; tag.textContent="Plus: today's app, word, quote, logo and game"; list.appendChild(tag); }
+    }
+    list.appendChild(b);
+    b.addEventListener("click", ()=>{
+      b.classList.add("inv");
+      setTimeout(()=>{ b.classList.remove("inv"); t.game ? openClaim(t) : t.logo ? openLogo(t) : openPress(t); }, reduce?0:350);
+    });
+    return {line, m};
+  });
+  fit(list, btns, list.clientHeight - 40, 130);
+}
+
+/* ───────── screen 2 ───────── */
+function openPress(t){
+  topic = t; show("press");
+  $("#meta2").textContent = metaLine(t.key);
+  const head=$("#pressHead");
+  buildLines(head, t.head || ["TODAY IN", t.key], {maxH: innerHeight*0.3, maxSize: 140});
+  $("#pressCap").textContent = t.cap || "Press for today's headlines.";
+  syncPlaylistLinks();
+}
+function syncPlaylistLinks(){
+  const has = !!(topic && topic.playlist && topic.playlist.length && !topic.slideshow);
+  document.querySelectorAll("[data-open-playlist]").forEach(el=>el.hidden=!has);
+}
+const plText = t => t.playlist.map(x=>`${x.artist} - ${x.song}`).join("\n");
+const ytm = x => "https://music.youtube.com/search?q="+encodeURIComponent(x.artist+" "+x.song);
+function openPlaylist(){
+  const t = topic && topic.playlist ? topic : TOPICS.find(x=>x.playlist);
+  if(!t) return; topic = t; token++; setPaused(false); show("playlist");
+  $("#plMeta").textContent = `${t.playlist.length} songs`;
+  buildLines($("#plHead"), ["THE","PLAYLIST"], {maxH: innerHeight*0.15, maxSize: 140});
+  $("#plCap").textContent = `The songs HEARD. says to start with, from this week's records. ${EDITION.date}.`;
+  const ol=$("#plList"); ol.innerHTML="";
+  t.playlist.forEach((x,i)=>{
+    const li=document.createElement("li"); const a=document.createElement("a");
+    a.href=ytm(x); a.target="_blank"; a.rel="noopener";
+    a.innerHTML=`<span class="n">${String(i+1).padStart(2,"0")}</span><span class="t"></span><span class="a"></span>`;
+    a.querySelector(".t").textContent=x.song; a.querySelector(".a").textContent=x.artist+" · YouTube Music →";
+    li.appendChild(a); ol.appendChild(li);
+  });
+}
+document.querySelectorAll("[data-open-playlist]").forEach(el=>el.addEventListener("click",e=>{ e.preventDefault(); openPlaylist(); }));
+$("#plCopy").addEventListener("click", async e=>{
+  const b=e.currentTarget, txt=plText(topic);
+  try{ await navigator.clipboard.writeText(txt); b.textContent="✓ COPIED"; }
+  catch(err){
+    const ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); b.textContent="✓ COPIED"; }catch(_){ b.textContent="COPY FAILED"; } ta.remove();
+  }
+  setTimeout(()=>b.textContent="COPY SONG LIST",2000);
+});
+$("#plSave").addEventListener("click", async e=>{
+  const b=e.currentTarget;
+  const blob=new Blob([plText(topic)+"\n"],{type:"text/plain"});
+  const name=`heard-playlist-${EDITION.iso}.txt`;
+  const r = await shareOrSave([{name, blob}]);
+  b.textContent = r===true ? "✓ SAVED" : r==="declined" ? "SAVE AS .TXT" : "TRY AGAIN";
+  setTimeout(()=>b.textContent="SAVE AS .TXT",2000);
+});
+$("#bigRed").addEventListener("click", e=>{
+  const b=e.currentTarget;
+  if(!reduce) b.animate([{transform:"scale(1)"},{transform:"scale(.94)",offset:.35},{transform:"scale(1.03)",offset:.7},{transform:"scale(1)"}],{duration:380,easing:"ease-out"});
+  setTimeout(()=>{ flash(); startPlay(); }, reduce?0:300);
+});
+
+/* ───────── screen 3: playback engine ───────── */
+let idx=0, token=0, paused=false;
+function wait(ms, tok){
+  return new Promise(res=>{
+    let left=ms, last=performance.now();
+    (function tick(now){
+      if(tok!==token) return res(false);
+      if(!paused) left -= now-last;
+      last=now;
+      if(left<=0) return res(true);
+      requestAnimationFrame(tick);
+    })(last);
+  });
+}
+function setPaused(p){ paused=p; $("#play").classList.toggle("paused",p); }
+
+function startPlay(){ show("play"); setPaused(false); $("#play [data-back]").textContent = topic.slideshow ? "← Archive" : "← Topics"; playStory(0); }
+
+async function playStory(i){
+  const tok = ++token;
+  const stories = topic.stories;
+  if(i>=stories.length){ return showEnd(); }
+  if(i<0) i=0;
+  idx=i;
+  const st = stories[i];
+  $("#prog").textContent = `${String(i+1).padStart(2,"0")} / ${String(stories.length).padStart(2,"0")}`;
+  const stage=$("#stage"); stage.getAnimations().forEach(a=>a.cancel());
+  const poster=$("#poster"), sum=$("#summary"), src=$("#source");
+  sum.innerHTML=""; src.innerHTML="&nbsp;";
+  const mkBox=$("#market"); mkBox.innerHTML=""; mkBox.style.visibility="hidden";
+  if(st.mk) mkBox.appendChild(marketEl(st.mk));   // reserve its space before sizing the poster
+  syncArcBtn();
+  buildLines(poster, st.h, {maxH: poster.clientHeight-8, maxSize: poster.clientHeight*0.42, wrapWords:true});
+
+  // 1. headline words slam in
+  const words=[...poster.querySelectorAll(".w")];
+  for(const w of words){
+    if(!(await wait(reduce?0:280, tok))) return;
+    w.animate(reduce
+      ? [{opacity:0},{opacity:1}]
+      : [{opacity:0,transform:"scale(1.1)"},{opacity:1,transform:"scale(1)"}],
+      {duration:reduce?150:480, easing:"cubic-bezier(.2,.9,.3,1)", fill:"forwards"});
+  }
+  if(!(await wait(reduce?0:1000, tok))) return;
+
+  // 2. summary transcribes word by word
+  const sw = st.s.split(" ");
+  const text=document.createTextNode(""); const cur=document.createElement("span"); cur.className="cursor";
+  sum.append(text, cur);
+  if(reduce){ text.data = st.s; }
+  else for(let k=1;k<=sw.length;k++){
+    if(!(await wait(k===1?0:180, tok))) return;
+    text.data = sw.slice(0,k).join(" ");
+  }
+
+  // 3. source footer
+  const a=document.createElement("a"); a.href=st.url; a.target="_blank"; a.rel="noopener"; a.textContent=`via ${st.src}`;
+  src.innerHTML=""; src.append(a, document.createTextNode(` • ${st.when}`));
+  mkBox.style.visibility="visible";
+
+  // 4. hold, then wipe up and out
+  if(!(await wait(5000, tok))) return;
+  if(!reduce){
+    const an = stage.animate([{transform:"translateY(0)",opacity:1},{transform:"translateY(-60%)",opacity:0}],{duration:850,easing:"cubic-bezier(.6,0,.8,.4)",fill:"forwards"});
+    if(!(await wait(860, tok))) return;
+    an.cancel();
+  }
+  playStory(i+1);
+}
+
+// tap = pause, swipe = skip
+(function(){
+  const el=$("#play"); let x0=0,y0=0,down=false;
+  el.addEventListener("pointerdown",e=>{ if(e.target.closest("a,button")) return; down=true; x0=e.clientX; y0=e.clientY; });
+  el.addEventListener("pointerup",e=>{
+    if(!down) return; down=false;
+    const dx=e.clientX-x0, dy=e.clientY-y0;
+    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)){ setPaused(false); playStory(dx<0? idx+1 : idx-1); }
+    else if(Math.abs(dx)<10 && Math.abs(dy)<10){ setPaused(!paused); }
+  });
+  addEventListener("keydown",e=>{
+    if(!$("#play").classList.contains("on")) return;
+    if(e.key===" "){ e.preventDefault(); setPaused(!paused); }
+    if(e.key==="ArrowRight"){ setPaused(false); playStory(idx+1); }
+    if(e.key==="ArrowLeft"){ setPaused(false); playStory(idx-1); }
+  });
+})();
+
+/* ───────── screen 4 ───────── */
+function showEnd(){
+  token++; show("end"); flash();
+  $("#meta4").textContent = metaLine(topic.key);
+  renderEndSources(); syncPlaylistLinks();
+  buildLines($("#endPoster"), topic.slideshow ? ["THAT'S YOUR","ARCHIVE."] : ["THAT'S","TODAY."], {maxH: innerHeight*0.26, wrapWords:true});
+  $("#endPoster").querySelectorAll(".w").forEach((w,i)=>
+    w.animate(reduce?[{opacity:0},{opacity:1}]:[{opacity:0,transform:"scale(1.1)"},{opacity:1,transform:"scale(1)"}],
+      {duration:480, delay:reduce?0:i*350, easing:"cubic-bezier(.2,.9,.3,1)", fill:"forwards"}));
+}
+$("#again").addEventListener("click", e=>{
+  if(!reduce) e.currentTarget.animate([{transform:"scale(1)"},{transform:"scale(.92)"},{transform:"scale(1)"}],{duration:300});
+  setTimeout(()=>{ flash(); startPlay(); }, reduce?0:150);
+});
+
+/* ───────── archive storage ─────────
+   Saves to the viewer's private space in the artifact's database when available
+   (data/users/<id>/…), and mirrors to this browser as a fallback. */
+const Store = (()=>{
+  const LS = "today-archive-v1";
+  let items = new Map(), col = null, mode = "memory";
+  const listeners = [];
+  const emit = () => listeners.forEach(f=>f());
+  function lsLoad(){ try{ const raw = localStorage.getItem(LS); (raw?JSON.parse(raw):[]).forEach(x=>items.set(x.id,x)); return true; }catch(e){ return false; } }
+  function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify([...items.values()])); }catch(e){} }
+  const timeout = (p,ms)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r({code:"timeout"}),ms))]);
+  async function waitForClaude(){
+    return null; // home-screen app: archive lives on this device
+  }
+  async function init(){
+    if(lsLoad()) mode = "browser";
+    emit();
+    try{
+      const c = await waitForClaude(); if(!c) return;
+      const [db, user] = await Promise.all([c.use("db"), c.use("user")]);
+      if(!db || !user) return;
+      const uid = await user.id(); if(!uid) return;
+      col = db.collection("data/users/" + uid);
+      const snap = await timeout(col.get(), 10000);
+      const acct = new Map();
+      snap.docs.forEach(d=>{ if(d.exists) acct.set(d.id, d.data()); });
+      for(const [k,v] of items){ if(!acct.has(k)){ try{ await col.doc(k).set(v); acct.set(k,v); }catch(e){} } }
+      items = acct; mode = "account"; lsSave(); emit();
+    }catch(e){ col = null; }
+  }
+  async function remote(fn){
+    if(!col) return;
+    try{ await fn(); }catch(e){ col = null; mode = "browser"; emit(); }
+  }
+  return {
+    init, onChange(f){ listeners.push(f); },
+    get mode(){ return mode; },
+    has: id => items.has(id),
+    count: () => items.size,
+    list: () => [...items.values()].sort((a,b)=>(b.savedAt||0)-(a.savedAt||0)),
+    async put(item){ items.set(item.id,item); lsSave(); emit(); await remote(()=>col.doc(item.id).set(item)); },
+    async del(id){ items.delete(id); lsSave(); emit(); await remote(()=>col.doc(id).delete()); },
+    async clear(){
+      const ids=[...items.keys()]; items.clear(); lsSave(); emit();
+      for(const id of ids){ if(!col) break; await remote(()=>col.doc(id).delete()); }
+    },
+  };
+})();
+
+function currentStory(){ return topic && topic.stories[idx]; }
+function syncArcBtn(){
+  const st = currentStory(), b = $("#arcBtn"); if(!st||!b) return;
+  const on = Store.has(st.id);
+  b.classList.toggle("on", on); b.setAttribute("aria-pressed", on);
+  b.textContent = on ? "✓ ARCHIVED" : "+ ARCHIVE";
+}
+Store.onChange(()=>{
+  document.querySelectorAll(".arcCount").forEach(el=>el.textContent = Store.count());
+  syncArcBtn();
+  if($("#archive").classList.contains("on")) renderArchive();
+});
+$("#arcBtn").addEventListener("click", ()=>{
+  const st = currentStory(); if(!st) return;
+  if(Store.has(st.id)) Store.del(st.id);
+  else Store.put({ id:st.id, topic:st.topic, h:st.h.slice(), s:st.s, src:st.src, when:st.when, url:st.url, edition:EDITION.date, savedAt:Date.now(), ...(st.mk?{mk:{...st.mk}}:{}) });
+});
+
+/* ───────── archive screen ───────── */
+let arcReturn = "topics", arcWasPaused = false;
+function openArchive(){
+  arcReturn = document.querySelector(".screen.on").id;
+  if(arcReturn==="play"){ arcWasPaused = paused; setPaused(true); }
+  hideConfirm(); show("archive"); renderArchive();
+}
+function closeArchive(){
+  show(arcReturn);
+  if(arcReturn==="play") setPaused(arcWasPaused);
+  if(arcReturn==="topics") renderTopics();
+}
+function renderArchive(){
+  buildLines($("#arcHead"), ["YOUR","ARCHIVE"], {maxH: innerHeight*0.2, maxSize: 110});
+  const list = $("#arcList"); list.innerHTML = "";
+  const items = Store.list();
+  $("#arcMeta").textContent = items.length ? `${items.length} saved` : "";
+  $("#clearBtn").style.display = items.length ? "" : "none";
+  $("#slideBtn").parentNode.style.display = items.length ? "" : "none";
+  if(!items.length){
+    const p=document.createElement("p"); p.className="empty";
+    p.textContent = "Nothing archived yet. Press ARCHIVE on any story to keep it here.";
+    list.appendChild(p);
+  }
+  items.forEach(it=>{
+    const d=document.createElement("article"); d.className="item";
+    const h=document.createElement("h3"); h.textContent = (it.h||[]).join(" ");
+    const p=document.createElement("p"); p.textContent = it.s || "";
+    const row=document.createElement("div"); row.className="row";
+    const left=document.createElement("span");
+    left.append(document.createTextNode(`${title(it.topic||"")} • ${it.edition||""} • `));
+    if(it.url){ const a=document.createElement("a"); a.href=it.url; a.target="_blank"; a.rel="noopener"; a.textContent=`via ${it.src||"source"}`; left.appendChild(a); }
+    const rm=document.createElement("button"); rm.className="ghost"; rm.textContent="Remove";
+    rm.setAttribute("aria-label", `Remove ${h.textContent} from archive`);
+    rm.addEventListener("click", ()=>Store.del(it.id));
+    row.append(left, rm);
+    d.append(h,p);
+    if(it.mk && it.mk.url){
+      const m=document.createElement("p"); m.className="mk";
+      const a=document.createElement("a"); a.href=it.mk.url; a.target="_blank"; a.rel="noopener";
+      a.textContent=`${it.mk.venue}: ${it.mk.q} — ${it.mk.odds}`;
+      m.append(document.createTextNode("Market odds · "), a, document.createTextNode(` (${it.mk.asof})`));
+      d.appendChild(m);
+    }
+    d.append(row); list.appendChild(d);
+  });
+  $("#storeNote").textContent = Store.mode==="account"
+    ? "Saved privately to your Claude account, so it follows you across devices."
+    : Store.mode==="browser" ? "Saved on this device. Clear it here any time." : "Your archive will be cleared when you close this page.";
+}
+function hideConfirm(){ $("#confirm").classList.remove("on"); $("#clearBtn").style.visibility=""; }
+$("#clearBtn").addEventListener("click", ()=>{
+  const n = Store.count();
+  $("#confirmText").textContent = `Remove all ${n} archived ${n===1?"story":"stories"}? This can't be undone.`;
+  $("#confirm").classList.add("on"); $("#clearBtn").style.visibility="hidden";
+});
+$("#clearNo").addEventListener("click", hideConfirm);
+$("#clearYes").addEventListener("click", async ()=>{ hideConfirm(); await Store.clear(); });
+$("#arcBack").addEventListener("click", e=>{ e.preventDefault(); closeArchive(); });
+document.querySelectorAll("[data-open-archive]").forEach(a=>a.addEventListener("click", e=>{ e.preventDefault(); openArchive(); }));
+
+/* sources list on the end screen */
+function renderEndSources(){
+  const ul=$("#endSourceList"); ul.innerHTML="";
+  topic.stories.forEach(st=>{
+    const li=document.createElement("li");
+    li.append(document.createTextNode(st.h.join(" ").replace(/\s+/g," ")+" — "));
+    const a=document.createElement("a"); a.href=st.url; a.target="_blank"; a.rel="noopener"; a.textContent=st.src;
+    li.append(a, document.createTextNode(` · ${st.when}`));
+    if(st.mk){ const m=document.createElement("a"); m.href=st.mk.url; m.target="_blank"; m.rel="noopener"; m.textContent=`${st.mk.venue} odds`; li.append(document.createTextNode(" · "), m); }
+    ul.appendChild(li);
+  });
+}
+
+/* ───────── prediction markets ───────── */
+function marketEl(mk){
+  const a=document.createElement("a"); a.className="mkt"; a.href=mk.url; a.target="_blank"; a.rel="noopener";
+  const b=document.createElement("b"); b.textContent=`MARKET ODDS · ${mk.venue.toUpperCase()}`;
+  const q=document.createElement("span"); q.textContent=mk.q;
+  const o=document.createElement("span"); o.className="o"; o.textContent=mk.odds;
+  const n=document.createElement("span"); n.textContent=`${mk.asof} · via ${mk.via} · trader prices, not forecasts`;
+  a.append(b,q,o,n); return a;
+}
+
+/* ───────── Claim ───────── */
+function openLogo(t){
+  topic = t; show("logo");
+  $("#metaLogo").textContent = metaLine("Logo Shop");
+  buildLines($("#logoHead"), ["TODAY'S","LOGO SHOP"], {maxH: innerHeight*0.26, maxSize: 160});
+  const ls=$("#logoSeason"); ls.textContent = t.micro ? `“${t.micro}.”` : "";
+  if(t.season){ const sm=document.createElement("small"); sm.textContent=`${t.season} · today's motif: ${t.motif||"seasonal"}`; ls.appendChild(sm); }
+  $("#logoOpen").href = t.url;
+}
+function openClaim(t){
+  topic = t; show("claim");
+  $("#metaClaim").textContent = metaLine("Claim");
+  buildLines($("#claimHead"), ["TODAY'S GAME","CLAIM"], {maxH: innerHeight*0.32, maxSize: 160});
+}
+
+/* ───────── archive slideshow ───────── */
+$("#slideBtn").addEventListener("click", ()=>{
+  const items = Store.list(); if(!items.length) return;
+  topic = { key:"ARCHIVE", slideshow:true, stories: items.slice().reverse().map(it=>({...it, h:(it.h||[]).slice()})) };
+  flash(); startPlay();
+});
+
+/* ───────── Instagram carousel export ─────────
+   Renders each archived story as a 1080×1350 (4:5) poster on a canvas. */
+const IG = { W:1080, H:1350, M:60, ink:"#0B0B0B", paper:"#F2F0EB" };
+let grainTile = null;
+function getGrain(){
+  if(grainTile) return grainTile;
+  const c=document.createElement("canvas"); c.width=c.height=256;
+  const x=c.getContext("2d"), d=x.createImageData(256,256);
+  for(let i=0;i<d.data.length;i+=4){ const v=Math.random()*255; d.data[i]=d.data[i+1]=d.data[i+2]=v; d.data[i+3]=255; }
+  x.putImageData(d,0,0); return grainTile=c;
+}
+function setFont(ctx, px, kind){ ctx.font = kind==="serif" ? `italic ${px}px "Instrument Serif", Georgia, serif` : `${px}px Anton, Oswald, Impact, sans-serif`; }
+function trackedWidth(ctx, text, track){ let w=0; for(const ch of text) w+=ctx.measureText(ch).width; return w + track*(Math.max([...text].length-1,0)); }
+function drawTracked(ctx, text, cx, y, track){
+  const w = trackedWidth(ctx,text,track); let x = cx - w/2;
+  for(const ch of text){ ctx.fillText(ch, x, y); x += ctx.measureText(ch).width + track; }
+}
+function wrap(ctx, text, maxW){
+  const words=text.split(/\s+/), lines=[]; let cur="";
+  for(const w of words){ const t=cur?cur+" "+w:w; if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }
+  if(cur) lines.push(cur); return lines;
+}
+// Stack display lines, each fitted to width, inside [top,bottom], centered vertically.
+function drawStack(ctx, lines, top, bottom, maxPx){
+  const W = IG.W - IG.M*2, LH = 0.9, TR = -0.03;
+  let sizes = lines.map(t=>{ setFont(ctx,100); const w = trackedWidth(ctx,t,100*TR) || 1; return Math.min(W/w*100, maxPx); });
+  const total = sizes.reduce((a,s)=>a+s*LH,0), room = bottom-top;
+  if(total>room) sizes = sizes.map(s=>s*room/total);
+  const used = sizes.reduce((a,s)=>a+s*LH,0);
+  let y = top + (room-used)/2;
+  ctx.fillStyle = IG.paper; ctx.textBaseline = "alphabetic";
+  lines.forEach((t,i)=>{ const s=sizes[i]; setFont(ctx,s); y += s*LH; drawTracked(ctx, t, IG.W/2, y - s*0.1, s*TR); });
+}
+function baseCanvas(){
+  const c=document.createElement("canvas"); c.width=IG.W; c.height=IG.H;
+  const ctx=c.getContext("2d"); ctx.fillStyle=IG.ink; ctx.fillRect(0,0,IG.W,IG.H);
+  return {c,ctx};
+}
+function finish(ctx, footer){
+  ctx.fillStyle=IG.paper; ctx.textAlign="left";
+  setFont(ctx,26,"serif"); ctx.globalAlpha=.8;
+  const fw = ctx.measureText(footer).width; ctx.fillText(footer, (IG.W-fw)/2, IG.H-56); ctx.globalAlpha=1;
+  ctx.globalAlpha=.10; ctx.globalCompositeOperation="screen";
+  ctx.fillStyle = ctx.createPattern(getGrain(),"repeat"); ctx.fillRect(0,0,IG.W,IG.H);
+  ctx.globalCompositeOperation="source-over"; ctx.globalAlpha=1;
+}
+function centerText(ctx, text, y){ const w=ctx.measureText(text).width; ctx.fillText(text,(IG.W-w)/2,y); }
+
+function renderStoryPoster(it, n, total){
+  const {c,ctx}=baseCanvas(); const W=IG.W-IG.M*2;
+  ctx.fillStyle=IG.paper; ctx.textAlign="left";
+  // bottom-up: footer, market box, source, summary
+  let y = IG.H - 110;
+  if(it.mk){
+    const bh=150, bw=760, bx=(IG.W-bw)/2, by=y-bh;
+    ctx.strokeStyle="rgba(242,240,235,.45)"; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
+    setFont(ctx,24); drawTracked(ctx, `MARKET ODDS · ${it.mk.venue.toUpperCase()}`, IG.W/2, by+40, 1);
+    setFont(ctx,26,"serif"); centerText(ctx, it.mk.q, by+74);
+    setFont(ctx,40); centerText(ctx, it.mk.odds, by+118);
+    setFont(ctx,20,"serif"); ctx.globalAlpha=.8; centerText(ctx, `${it.mk.asof} · trader prices, not forecasts`, by+142); ctx.globalAlpha=1;
+    y = by - 28;
+  }
+  setFont(ctx,28,"serif"); ctx.globalAlpha=.85; centerText(ctx, `via ${it.src||"source"} • ${it.when||""}`, y); ctx.globalAlpha=1;
+  y -= 52;
+  setFont(ctx,44,"serif");
+  const lines = wrap(ctx, it.s||"", 880), lh=52;
+  for(let i=lines.length-1;i>=0;i--){ centerText(ctx, lines[i], y); y -= lh; }
+  drawStack(ctx, it.h||[], 70, y - 30, 420);
+  finish(ctx, `No. ${EDITION.issue} • ${title(it.topic||"")} • ${it.edition||EDITION.date} • ${n}/${total}`);
+  return c;
+}
+function renderCover(count){
+  const {c,ctx}=baseCanvas();
+  drawStack(ctx, ["TODAY.","THE","ARCHIVE"], 110, 1020, 520);
+  ctx.fillStyle=IG.paper; setFont(ctx,48,"serif");
+  centerText(ctx, `${count} ${count===1?"story":"stories"} worth keeping.`, 1110);
+  setFont(ctx,30,"serif"); ctx.globalAlpha=.8; centerText(ctx, "Swipe →", 1170); ctx.globalAlpha=1;
+  finish(ctx, `No. ${EDITION.issue} • ${EDITION.date}`); return c;
+}
+function renderEnd(){
+  const {c,ctx}=baseCanvas();
+  drawStack(ctx, ["THAT'S","TODAY."], 160, 980, 560);
+  ctx.fillStyle=IG.paper; setFont(ctx,44,"serif"); centerText(ctx, "Sources are in the caption.", 1100);
+  finish(ctx, `No. ${EDITION.issue} • ${EDITION.date}`); return c;
+}
+const toBlob = c => new Promise(r=>c.toBlob(r,"image/png"));
+
+let exportSlides = [];   // {name, blob, url}
+async function openExport(){
+  const items = Store.list().slice().reverse().slice(0,18);   // oldest first; 18 + cover + end = 20 (Instagram's max)
+  if(!items.length) return;
+  show("export"); $("#expStatus").textContent="Making your slides…";
+  buildLines($("#expHead"), ["FOR","INSTAGRAM"], {maxH: innerHeight*0.16, maxSize: 100});
+  exportSlides.forEach(s=>URL.revokeObjectURL(s.url)); exportSlides=[];
+  const grid=$("#expGrid"); grid.innerHTML="";
+  await document.fonts.ready;
+  const canvases=[renderCover(items.length), ...items.map((it,i)=>renderStoryPoster(it,i+1,items.length)), renderEnd()];
+  for(let i=0;i<canvases.length;i++){
+    const blob=await toBlob(canvases[i]); const url=URL.createObjectURL(blob);
+    const name=`today-archive-${String(i+1).padStart(2,"0")}.png`;
+    exportSlides.push({name,blob,url});
+    const fig=document.createElement("figure"); fig.className="slide";
+    const img=document.createElement("img"); img.src=url; img.alt=`Slide ${i+1}`;
+    const b=document.createElement("button"); b.className="ghost"; b.textContent=`Save ${i+1}`;
+    b.addEventListener("click", ()=>saveSlide(i, b));
+    fig.append(img,b); grid.appendChild(fig);
+  }
+  $("#expCaption").value = buildCaption(items);
+  const sh = canShareFiles();
+  $("#saveAll").textContent = sh ? "SHARE ALL SLIDES" : "SAVE ALL SLIDES";
+  $("#expStatus").textContent = `${exportSlides.length} slides, 1080×1350. ` + (sh ? "Share them, tap Save Images, then post as one carousel." : "Save them, then post as one carousel.");
+}
+/* Share sheet when the phone supports sharing files (iPhone Safari does), else a normal download. */
+function canShareFiles(){
+  try{ return !!(navigator.canShare && navigator.canShare({files:[new File([new Blob(["x"],{type:"image/png"})],"t.png",{type:"image/png"})]})); }catch(e){ return false; }
+}
+async function shareOrSave(list){
+  const files = list.map(x=>new File([x.blob], x.name, {type:x.blob.type||"application/octet-stream"}));
+  if(navigator.canShare && navigator.canShare({files})){
+    try{ await navigator.share({files}); return true; }
+    catch(e){ return e && e.name==="AbortError" ? "declined" : false; }
+  }
+  for(const x of list){
+    const a=document.createElement("a"); a.href=URL.createObjectURL(x.blob); a.download=x.name;
+    document.body.appendChild(a); a.click(); a.remove(); await new Promise(r=>setTimeout(r,300));
+  }
+  return true;
+}
+async function saveSlide(i, btn){
+  const r = await shareOrSave([exportSlides[i]]);
+  if(btn) btn.textContent = r===true ? "✓ Saved" : r==="declined" ? `Save ${i+1}` : "Try again";
+  return r;
+}
+$("#saveAll").addEventListener("click", async e=>{
+  const b=e.currentTarget, label=b.textContent; b.disabled=true;
+  const r = await shareOrSave(exportSlides);
+  b.textContent = r===true ? "✓ DONE" : label;
+  setTimeout(()=>{ b.disabled=false; b.textContent=label; }, 1800);
+});
+function buildCaption(items){
+  const lines = items.map((it,i)=>`${i+1}. ${(it.h||[]).join(" ").replace(/\s+/g," ")} — via ${it.src}${it.url?` (${it.url})`:""}`);
+  const mk = items.filter(it=>it.mk).map(it=>`${it.mk.venue}: ${it.mk.q} — ${it.mk.odds} (${it.mk.asof})`);
+  return `TODAY. — from my archive, ${EDITION.date}\n\nSources:\n${lines.join("\n")}` + (mk.length?`\n\nMarket odds are trader prices, not forecasts:\n${mk.join("\n")}`:"") + `\n\n#news #typography`;
+}
+$("#copyCap").addEventListener("click", async e=>{
+  const b=e.currentTarget, t=$("#expCaption");
+  try{ await navigator.clipboard.writeText(t.value); b.textContent="✓ COPIED"; }
+  catch(err){ t.focus(); t.select(); b.textContent="SELECTED: COPY IT"; }
+  setTimeout(()=>b.textContent="COPY CAPTION",2000);
+});
+$("#expBtn").addEventListener("click", openExport);
+$("#expBack").addEventListener("click", e=>{ e.preventDefault(); show("archive"); renderArchive(); });
+
+/* back links */
+document.querySelectorAll("[data-back]").forEach(a=>a.addEventListener("click",e=>{
+  e.preventDefault(); token++; setPaused(false);
+  if(topic && topic.slideshow && a.closest("#play,#end")){ topic=null; arcReturn="topics"; show("archive"); renderArchive(); return; }
+  renderTopics();
+}));
+
+/* refit on resize */
+let rt; addEventListener("resize",()=>{ clearTimeout(rt); rt=setTimeout(()=>{
+  const on=document.querySelector(".screen.on").id;
+  if(on==="topics") renderTopics();
+  else if(on==="press") openPress(topic);
+  else if(on==="play") playStory(idx);
+  else if(on==="end") showEnd();
+  else if(on==="archive") renderArchive();
+  else if(on==="claim") openClaim(topic);
+  else if(on==="logo") openLogo(topic);
+  else if(on==="export") buildLines($("#expHead"), ["FOR","INSTAGRAM"], {maxH: innerHeight*0.16, maxSize: 100});
+},150); });
+
+/* start once fonts are ready so measurements are right */
+Promise.all([document.fonts.load('100px "Anton"'), document.fonts.load('italic 20px "Instrument Serif"')])
+  .catch(()=>{}).then(()=>document.fonts.ready).then(()=>{ renderTopics(); Store.init(); });
+</script>
+<div id="install" role="dialog" aria-label="Add TODAY. to your Home Screen">
+  <span id="installMsg"></span><button class="x" id="installX" aria-label="Dismiss">×</button>
+</div>
+<script>
+/* ───────── home-screen app plumbing ───────── */
+(function(){
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if("serviceWorker" in navigator){ addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }
+
+  // Install prompt: iPhone gets instructions, Android/Chrome gets a button.
+  const bar=document.getElementById("install"), msg=document.getElementById("installMsg");
+  const seen=()=>{ try{ return localStorage.getItem("today-install-dismissed")==="1"; }catch(e){ return false; } };
+  const refit=()=>{ try{ if(document.querySelector("#topics.on")) renderTopics(); }catch(e){} };
+  const showBar=()=>{ bar.classList.add("on"); document.body.classList.add("installing"); refit(); };
+  const hide=()=>{ bar.classList.remove("on"); document.body.classList.remove("installing"); refit(); try{ localStorage.setItem("today-install-dismissed","1"); }catch(e){} };
+  document.getElementById("installX").addEventListener("click", hide);
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+  if(!standalone && !seen() && ios){
+    msg.innerHTML = 'Get <b>TODAY.</b> on your Home Screen: tap Share <span aria-hidden="true">⬆︎</span>, then <b>Add to Home Screen</b>.';
+    setTimeout(showBar, 1500);
+  }
+  let deferred=null;
+  addEventListener("beforeinstallprompt", e=>{
+    e.preventDefault(); deferred=e; if(seen()) return;
+    msg.innerHTML = 'Put <b>TODAY.</b> on your Home Screen.';
+    const go=document.createElement("button"); go.className="go"; go.textContent="INSTALL";
+    go.onclick=async()=>{ deferred.prompt(); await deferred.userChoice; deferred=null; hide(); };
+    msg.after(go); showBar();
+  });
+  addEventListener("appinstalled", hide);
+
+  // A home-screen app can stay open for days: pick up the new edition when it comes back to the front.
+  const loadedAt = Date.now();
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState!=="visible" || !navigator.onLine) return;
+    if(Date.now()-loadedAt < 60*60*1000) return;
+    const playing = document.querySelector("#play.on, #export.on");
+    if(!playing) location.reload();
+  });
+})();
+</script>
+</body>
+</html>
