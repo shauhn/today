@@ -1,0 +1,45 @@
+# Sends a phone notification through ntfy (https://ntfy.sh) whenever a new edition is published.
+# Subscribe in the ntfy app to the topic below. Run it by hand from the Actions tab to test.
+name: Morning alert
+
+on:
+  push:
+    branches: [main]
+    paths: [edition.js]
+  workflow_dispatch:
+
+env:
+  NTFY_TOPIC: today-shauhn-334f1ec4a5
+  APP_URL: https://shauhn.github.io/today/
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read today's edition
+        id: ed
+        run: |
+          node -e '
+            const src = require("fs").readFileSync("edition.js","utf8");
+            const { EDITION, TOPICS } = new Function(src + "; return { EDITION, TOPICS };")();
+            const lead = TOPICS.find(t => !t.extra && t.stories && t.stories.length);
+            const head = lead ? lead.stories[0].h.join(" ").replace(/\s+/g," ") : "";
+            const title = "TODAY. No. " + EDITION.issue + " is out";
+            const body = EDITION.date + (head ? " · " + lead.key + ": " + head : "");
+            const out = require("fs").createWriteStream(process.env.GITHUB_OUTPUT, {flags:"a"});
+            out.write("title=" + title + "\n");
+            out.write("body<<EOF_BODY\n" + body + "\nEOF_BODY\n");
+          '
+      - name: Send notification
+        env:
+          TITLE: ${{ steps.ed.outputs.title }}
+          BODY: ${{ steps.ed.outputs.body }}
+        run: |
+          curl -sS --fail \
+            -H "Title: $TITLE" \
+            -H "Click: $APP_URL" \
+            -H "Icon: ${APP_URL}icons/icon-192.png" \
+            -H "Tags: newspaper" \
+            -d "$BODY" \
+            "https://ntfy.sh/$NTFY_TOPIC"
