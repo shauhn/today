@@ -2,7 +2,7 @@
    - The page and today's edition: network first, so a new edition shows as soon as it's published;
      the last copy is used when offline.
    - Fonts and icons: cache first (they never change). */
-const VERSION = "today-v1";
+const VERSION = "today-v2";
 const SHELL = ["./", "index.html", "edition.js", "manifest.webmanifest",
   "fonts/Anton-Regular.woff2", "fonts/InstrumentSerif-Regular.woff2", "fonts/InstrumentSerif-Italic.woff2",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/favicon-32.png"];

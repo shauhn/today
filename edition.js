@@ -58,7 +58,6 @@ const TOPICS = [
     { h:["PEOPLE ARE","TRAPPED IN","HISTORY AND","HISTORY IS","TRAPPED IN THEM."], s:"James Baldwin, “Stranger in the Village” (1953), collected in Notes of a Native Son (1955).", src:"Wikiquote", when:"Notes of a Native Son, 1955", url:"https://en.wikiquote.org/wiki/James_Baldwin" },
     { h:["JAMES","BALDWIN","1924–1987"], s:"Novelist and essayist whose books include Go Tell It on the Mountain, Notes of a Native Son, Giovanni's Room and The Fire Next Time.", src:"Library of America", when:"Today", url:"https://www.loa.org/writers/233-james-baldwin/" },
   ]},
-  { key:"LOGO SHOP", extra:true, logo:true, url:"https://claude.ai/artifact/BNzfipQWN9duLGxwnTcSsd",
-    season:"Beginning of Winter", micro:"The ground begins to freeze", motif:"Frost crystal", stories:[] },
+  { key:"TYPE POSTER", extra:true, poster:true, url:"https://claude.ai/artifact/3uYq3QEWWfi5wurat5NTdJ", stories:[] },
   { key:"CLAIM", extra:true, game:true, url:"https://claude.ai/artifact/J56wLgj1oUokb56Rg6juFs", stories:[] },
 ];

@@ -227,19 +227,20 @@
 </section>
 
 <!-- LOGO SHOP -->
-<section class="screen" id="logo" aria-label="Daily Logo Shop">
+<section class="screen" id="logo" aria-label="Type Poster Maker">
   <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span></span></div>
   <div class="head display" id="logoHead"></div>
   <div class="mid">
     <p id="logoSeason"></p>
+    <button class="arc" id="logoCopy" style="min-width:0">COPY HEADLINE</button>
     <ol class="rules">
-      <li><b>1</b><span>Every day brings a new mark, drawn from one of Japan's 72 micro-seasons.</span></li>
-      <li><b>2</b><span>Type your brand name, then pick a motif, layout and colors.</span></li>
-      <li><b>3</b><span>Shuffle for ideas. Every mark is original geometry.</span></li>
-      <li><b>4</b><span>Save it as SVG or PNG.</span></li>
+      <li><b>1</b><span>Paste a headline, one poster line per row.</span></li>
+      <li><b>2</b><span>Pick a condensed face, an italic caption and colors.</span></li>
+      <li><b>3</b><span>Size it for Instagram, or an iPhone or desktop wallpaper.</span></li>
+      <li><b>4</b><span>Save your poster as an image.</span></li>
     </ol>
-    <a class="redbtn small" id="logoOpen" href="https://claude.ai/artifact/BNzfipQWN9duLGxwnTcSsd" target="_blank" rel="noopener" style="width:130px;font-size:30px">OPEN</a>
-    <p class="cap" style="font-size:16px">Opens the Daily Logo Shop in a new tab.</p>
+    <a class="redbtn small" id="logoOpen" href="https://claude.ai/artifact/3uYq3QEWWfi5wurat5NTdJ" target="_blank" rel="noopener" style="width:130px;font-size:30px">OPEN</a>
+    <p class="cap" style="font-size:16px">Opens Type Poster Maker in a new tab.</p>
   </div>
   <p class="meta" id="metaLogo"></p>
 </section>
@@ -372,12 +373,12 @@ function renderTopics(){
     line.appendChild(m); b.appendChild(line);
     if(t.extra){
       b.classList.add("appbtn");
-      if(!list.querySelector(".apptag")){ const tag=document.createElement("p"); tag.className="apptag"; tag.textContent="Plus: today's app, word, quote, logo and game"; list.appendChild(tag); }
+      if(!list.querySelector(".apptag")){ const tag=document.createElement("p"); tag.className="apptag"; tag.textContent="Plus: today's app, word, quote, poster and game"; list.appendChild(tag); }
     }
     list.appendChild(b);
     b.addEventListener("click", ()=>{
       b.classList.add("inv");
-      setTimeout(()=>{ b.classList.remove("inv"); t.game ? openClaim(t) : t.logo ? openLogo(t) : openPress(t); }, reduce?0:350);
+      setTimeout(()=>{ b.classList.remove("inv"); t.game ? openClaim(t) : (t.poster||t.logo) ? openLogo(t) : openPress(t); }, reduce?0:350);
     });
     return {line, m};
   });
@@ -695,10 +696,20 @@ function marketEl(mk){
 /* ───────── Claim ───────── */
 function openLogo(t){
   topic = t; show("logo");
-  $("#metaLogo").textContent = metaLine("Logo Shop");
-  buildLines($("#logoHead"), ["TODAY'S","LOGO SHOP"], {maxH: innerHeight*0.26, maxSize: 160});
-  const ls=$("#logoSeason"); ls.textContent = t.micro ? `“${t.micro}.”` : "";
-  if(t.season){ const sm=document.createElement("small"); sm.textContent=`${t.season} · today's motif: ${t.motif||"seasonal"}`; ls.appendChild(sm); }
+  $("#metaLogo").textContent = metaLine("Type Poster");
+  buildLines($("#logoHead"), ["TODAY'S","TYPE POSTER"], {maxH: innerHeight*0.24, maxSize: 160});
+  const lead = (TOPICS.find(x=>!x.extra && x.stories && x.stories.length)||{}).stories;
+  const h = lead ? lead[0].h : [];
+  const ls=$("#logoSeason"); ls.textContent = h.length ? `“${h.join(" ")}”` : "";
+  const sm=document.createElement("small"); sm.textContent="Today's lead headline. Copy it, then paste it into the poster maker."; ls.appendChild(sm);
+  const cb=$("#logoCopy"); cb.hidden = !h.length;
+  cb.onclick = async()=>{
+    const txt=h.join("\n");
+    try{ await navigator.clipboard.writeText(txt); cb.textContent="✓ COPIED"; }
+    catch(e){ const ta=document.createElement("textarea"); ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand("copy"); cb.textContent="✓ COPIED"; }catch(_){ cb.textContent="COPY FAILED"; } ta.remove(); }
+    setTimeout(()=>cb.textContent="COPY HEADLINE",2000);
+  };
   $("#logoOpen").href = t.url;
 }
 function openClaim(t){
