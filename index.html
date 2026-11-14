@@ -138,6 +138,10 @@
   .mkt b{font-family:var(--display);font-weight:400;font-style:normal;font-size:13px;letter-spacing:.04em;display:block}
   .mkt .o{font-family:var(--display);font-style:normal;font-size:17px;display:block;margin:2px 0}
   .item .mk{font-style:italic;font-size:13px;margin-top:6px;opacity:.9}
+  .item .tools{display:flex;gap:8px;margin-top:10px}
+  .item .tools > *{flex:1;height:40px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-style:normal;font-size:clamp(14px,4vw,16px);letter-spacing:.02em;text-decoration:none;white-space:nowrap;min-width:0}
+  .item .tools .tCopy{border:1.5px solid var(--paper)}
+  .item .tools .tPoster{background:var(--red);color:var(--paper)}
   .item .mk a{border-bottom:1px solid rgba(242,240,235,.4);text-decoration:none}
   /* export screen */
   #expScroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px}
@@ -631,6 +635,16 @@ function closeArchive(){
   if(arcReturn==="play") setPaused(arcWasPaused);
   if(arcReturn==="topics") renderTopics();
 }
+/* Copy text to the clipboard; returns true when it worked. */
+async function copyText(txt){
+  try{ await navigator.clipboard.writeText(txt); return true; }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=txt; ta.setAttribute("readonly",""); ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    let ok=false; try{ ok=document.execCommand("copy"); }catch(_){}
+    ta.remove(); return ok;
+  }
+}
 function renderArchive(){
   buildLines($("#arcHead"), ["YOUR","ARCHIVE"], {maxH: innerHeight*0.2, maxSize: 110});
   const list = $("#arcList"); list.innerHTML = "";
@@ -655,7 +669,16 @@ function renderArchive(){
     rm.setAttribute("aria-label", `Remove ${h.textContent} from archive`);
     rm.addEventListener("click", ()=>Store.del(it.id));
     row.append(left, rm);
-    d.append(h,p);
+    const tools=document.createElement("div"); tools.className="tools";
+    const cp=document.createElement("button"); cp.className="tCopy"; cp.textContent="COPY HEADLINE";
+    cp.setAttribute("aria-label", `Copy headline: ${h.textContent}`);
+    cp.addEventListener("click", async()=>{ cp.textContent = await copyText((it.h||[]).join("\n")) ? "✓ COPIED" : "COPY FAILED"; setTimeout(()=>cp.textContent="COPY HEADLINE",1800); });
+    const mp=document.createElement("a"); mp.className="tPoster"; mp.textContent="MAKE POSTER →"; mp.target="_blank"; mp.rel="noopener";
+    mp.href=(TOPICS.find(t=>t.poster)||{}).url || "https://claude.ai/artifact/3uYq3QEWWfi5wurat5NTdJ";
+    mp.setAttribute("aria-label", `Copy this headline and open Type Poster Maker`);
+    mp.addEventListener("click", ()=>{ copyText((it.h||[]).join("\n")); });
+    tools.append(cp, mp);
+    d.append(h,p,tools);
     if(it.mk && it.mk.url){
       const m=document.createElement("p"); m.className="mk";
       const a=document.createElement("a"); a.href=it.mk.url; a.target="_blank"; a.rel="noopener";
