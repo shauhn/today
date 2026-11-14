@@ -148,10 +148,18 @@
   #expCaption{width:100%;background:#141414;color:var(--paper);border:1px solid rgba(242,240,235,.3);font:14px/1.4 ui-monospace,Menlo,monospace;padding:10px;resize:none}
   /* claim screen */
   #claim .head,#logo .head{margin-top:10px}
-  #logo .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0;text-align:center}
-  #logo .rules{text-align:left}
-  #logoSeason{font-family:var(--serif);font-style:italic;font-size:clamp(20px,5.6vw,28px);line-height:1.2;max-width:520px}
-  #logoSeason small{display:block;font-size:14px;opacity:.6;margin-top:6px}
+  #logo .mid{flex:1;display:flex;flex-direction:column;align-items:stretch;gap:12px;min-height:0;padding:10px 0 4px;width:100%;max-width:520px;margin:0 auto}
+  .tpPreview{flex:1;min-height:120px;border:1.5px solid rgba(242,240,235,.35);padding:32px 12px 14px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .tpPreview .tpTag{position:absolute;top:8px;left:12px;font-style:italic;font-size:13px;opacity:.6}
+  #logoSeason{width:100%}
+  .tpSteps{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-style:italic;font-size:15px;line-height:1.2}
+  .tpSteps li{display:flex;gap:7px;align-items:baseline}
+  .tpSteps b{font-family:var(--display);font-weight:400;font-style:normal;font-size:17px}
+  .tpBtns{display:flex;gap:10px}
+  .tpBtns > *{flex:1;height:54px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:clamp(16px,4.8vw,20px);letter-spacing:.02em;text-decoration:none;min-width:0;white-space:nowrap}
+  .tpOpen{background:var(--red);color:var(--paper)}
+  .tpCopy{border:1.5px solid var(--paper)}
+  .tpNote{text-align:center;font-style:italic;font-size:14px;opacity:.6}
   #claim .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0}
   .rules{list-style:none;max-width:30ch;display:flex;flex-direction:column;gap:9px}
   .rules li{display:grid;grid-template-columns:1.6em 1fr;font-style:italic;font-size:17px;line-height:1.2}
@@ -231,16 +239,18 @@
   <div class="topbar"><a href="#" class="back" data-back>← Topics</a><span></span></div>
   <div class="head display" id="logoHead"></div>
   <div class="mid">
-    <p id="logoSeason"></p>
-    <button class="arc" id="logoCopy" style="min-width:0">COPY HEADLINE</button>
-    <ol class="rules">
-      <li><b>1</b><span>Paste a headline, one poster line per row.</span></li>
-      <li><b>2</b><span>Pick a condensed face, an italic caption and colors.</span></li>
-      <li><b>3</b><span>Size it for Instagram, or an iPhone or desktop wallpaper.</span></li>
-      <li><b>4</b><span>Save your poster as an image.</span></li>
+    <div class="tpPreview" id="tpPreview"><span class="tpTag">Today's lead headline</span><div class="display" id="logoSeason"></div></div>
+    <ol class="tpSteps">
+      <li><b>1</b><span>Copy the headline</span></li>
+      <li><b>2</b><span>Open the maker, paste</span></li>
+      <li><b>3</b><span>Pick type &amp; colors</span></li>
+      <li><b>4</b><span>Size it, save it</span></li>
     </ol>
-    <a class="redbtn small" id="logoOpen" href="https://claude.ai/artifact/3uYq3QEWWfi5wurat5NTdJ" target="_blank" rel="noopener" style="width:130px;font-size:30px">OPEN</a>
-    <p class="cap" style="font-size:16px">Opens Type Poster Maker in a new tab.</p>
+    <div class="tpBtns">
+      <button class="tpCopy" id="logoCopy">COPY HEADLINE</button>
+      <a class="tpOpen" id="logoOpen" href="https://claude.ai/artifact/3uYq3QEWWfi5wurat5NTdJ" target="_blank" rel="noopener">OPEN →</a>
+    </div>
+    <p class="tpNote">Opens Type Poster Maker in a new tab.</p>
   </div>
   <p class="meta" id="metaLogo"></p>
 </section>
@@ -697,12 +707,12 @@ function marketEl(mk){
 function openLogo(t){
   topic = t; show("logo");
   $("#metaLogo").textContent = metaLine("Type Poster");
-  buildLines($("#logoHead"), ["TODAY'S","TYPE POSTER"], {maxH: innerHeight*0.24, maxSize: 160});
+  buildLines($("#logoHead"), ["TODAY'S","TYPE POSTER"], {maxH: innerHeight*0.15, maxSize: 120});
   const lead = (TOPICS.find(x=>!x.extra && x.stories && x.stories.length)||{}).stories;
   const h = lead ? lead[0].h : [];
-  const ls=$("#logoSeason"); ls.textContent = h.length ? `“${h.join(" ")}”` : "";
-  const sm=document.createElement("small"); sm.textContent="Today's lead headline. Copy it, then paste it into the poster maker."; ls.appendChild(sm);
-  const cb=$("#logoCopy"); cb.hidden = !h.length;
+  const pv=$("#tpPreview");
+  buildLines($("#logoSeason"), h.length ? h : ["NO","HEADLINE","YET"], {maxH: Math.max(80, pv.clientHeight - 56), maxSize: 150});
+  const cb=$("#logoCopy"); cb.disabled = !h.length;
   cb.onclick = async()=>{
     const txt=h.join("\n");
     try{ await navigator.clipboard.writeText(txt); cb.textContent="✓ COPIED"; }
